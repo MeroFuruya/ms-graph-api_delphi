@@ -6,6 +6,12 @@ uses
   System.Generics.Collections;
 
 type
+  TMsDictionaryItem = record
+    Id: string;
+    Entity: TObject;
+    Index: Integer;
+  end;
+
   TMsEntityDictionary = class
   private
     FUsesCustomIndex: Boolean;
@@ -28,6 +34,7 @@ type
     function RemoveByEntity(const AEntity: TObject): Boolean;
     function GetCount: Integer;
     function Clone: TMsEntityDictionary;
+    function Items: TArray<TMsDictionaryItem>;
     property Count: Integer read GetCount;
   end;
 
@@ -224,6 +231,19 @@ begin
       Result := True;
       Break;
     end;
+  end;
+end;
+
+function TMsEntityDictionary.Items: TArray<TMsDictionaryItem>;
+var
+  i: Integer;
+begin
+  SetLength(Result, FId.Count);
+  for i := 0 to FId.Count - 1 do
+  begin
+    Result[i].Id := FId[i];
+    Result[i].Entity := FEntity[i];
+    Result[i].Index := FIndex[i];
   end;
 end;
 
