@@ -10,7 +10,7 @@ uses
   System.SysUtils,
   System.StrUtils,
   System.Generics.Collections,
-  MsAuthenticator;
+  MicrosoftApiAuthenticator;
 
 
 type
@@ -97,19 +97,19 @@ begin
     if ARes.StatusCode <> 200 then
     begin
       AErr := Default(TMsError);
-      AErr.StatusCode := ARes.StatusCode;
-      AErr.StatusText := ARes.StatusText;
-      AErr.url := AUrl;
-      AErr.Method := sHTTPMethodGet;
-      AErr.req_Header := AReq.Headers;
-      AErr.res_header := ARes.Headers;
-      AErr.error_data := ARes.ContentAsString();
+      AErr.HTTPStatusCode := ARes.StatusCode;
+      AErr.HTTPStatusText := ARes.StatusText;
+      AErr.HTTPurl := AUrl;
+      AErr.HTTPMethod := sHTTPMethodGet;
+      AErr.HTTPreq_Header := AReq.Headers;
+      AErr.HTTPres_header := ARes.Headers;
+      AErr.HTTPerror_data := ARes.ContentAsString();
 
       Aj := TJSONValue.ParseJSONValue(ARes.ContentAsString(TEncoding.UTF8));
       if Aj.TryGetValue<TJsonValue>('error', AJErr) then
       begin
-        AJErr.TryGetValue<string>('code', AErr.error_name);
-        AJErr.TryGetValue<string>('message', AErr.error_description);
+        AJErr.TryGetValue<string>('code', AErr.HTTPerror_name);
+        AJErr.TryGetValue<string>('message', AErr.HTTPerror_description);
       end;
       Aj.Free;
       self.OnRequestError(AErr);
@@ -232,19 +232,19 @@ begin
       if AResCode <> 200 then
       begin
         AErr := Default(TMsError);
-        AErr.StatusCode := ARes.StatusCode;
-        AErr.StatusText := ARes.StatusText;
-        AErr.url := AUrl;
-        AErr.Method := sHTTPMethodGet;
-        AErr.req_Header := AReq.Headers;
-        AErr.res_header := ARes.Headers;
-        AErr.error_data := ARes.ContentAsString();
+        AErr.HTTPStatusCode := ARes.StatusCode;
+        AErr.HTTPStatusText := ARes.StatusText;
+        AErr.HTTPurl := AUrl;
+        AErr.HTTPMethod := sHTTPMethodGet;
+        AErr.HTTPreq_Header := AReq.Headers;
+        AErr.HTTPres_header := ARes.Headers;
+        AErr.HTTPerror_data := ARes.ContentAsString();
 
         Aj := TJSONValue.ParseJSONValue(ARes.ContentAsString(TEncoding.UTF8));
         if Aj.TryGetValue<TJsonValue>('error', AJErr) then
         begin
-          AJErr.TryGetValue<string>('code', AErr.error_name);
-          AJErr.TryGetValue<string>('message', AErr.error_description);
+          AJErr.TryGetValue<string>('code', AErr.HTTPerror_name);
+          AJErr.TryGetValue<string>('message', AErr.HTTPerror_description);
         end;
         Aj.Free;
         self.OnRequestError(AErr);
