@@ -1,4 +1,4 @@
-﻿unit MsAuthenticator;
+﻿unit MicrosoftApiAuthenticator;
 
 interface
 
@@ -23,16 +23,20 @@ uses
 
 type
   TMsError = record
-    StatusCode: integer;
-    StatusText: string;
-    url: string;
-    Method: string;
-    req_Header: TNetHeaders;
-    res_header: TNetHeaders;
-    error_data: string;
-    error_name: string;
-    error_description: string;
+    HTTPStatusCode: integer;
+    HTTPStatusText: string;
+    HTTPurl: string;
+    HTTPMethod: string;
+    HTTPreq_Header: TNetHeaders;
+    HTTPres_header: TNetHeaders;
+    HTTPerror_data: string;
+    HTTPerror_name: string;
+    HTTPerror_description: string;
+    INTERNALerror_name: string;
+    INTERNALerror_message: string;
+    class operator Initialize(out Dest: TMsError);
   end;
+
 
   THttpServerResponse = TIdHTTPResponseInfo;
   TRedirectUri = record
@@ -109,6 +113,8 @@ type
   private
     FAuthenticatorType: TAthenticatorType;
     // main Vars
+    FHttpClient: THTTPClient;
+
     FClientInfo: TMsClientInfo;
     FEvents: TMsClientEvents;
     function FGetToken: string; virtual; abstract;
@@ -121,7 +127,7 @@ type
   TMsDelegatedAuthenticator = class(TMsAuthenticator)
   private
     // HTTP Vars
-    FHttpClient: THTTPClient;
+
     FScope: TMsClientInfo.TScope;
 
     // Token Vars
@@ -164,7 +170,6 @@ type
   private
 
     // HTTP Vars
-    FHttpClient: THTTPClient;
     FScope: TMsClientInfo.TScope;
 
     // Token Vars
@@ -208,13 +213,15 @@ type
   private type
     TOnRequestError = TMsAuthenticator.TOnRequestError;
   private
-    AAuthenticator: TMsAuthenticator;
+    FAuthenticator: TMsAuthenticator;
     function FGetToken: string;
     function FForeRefresh: string;
     function FGetAuthenticatorType: TAthenticatorType;
     function FGetRequestErrorEvent: TOnRequestError;
+    function FGetHttpClient: THttpClient;
   protected
     property Token: string read FGetToken;
+    property Http: THttpClient read FGetHttpClient;
     property ForceRefresh: string read FForeRefresh;
     property AuthenticatorType: TAthenticatorType read FGetAuthenticatorType;
     property OnRequestError: TOnRequestError read FGetRequestErrorEvent;
@@ -224,7 +231,7 @@ type
 
 implementation
 
-{ TMsTokenStorege }
+{ TMsAdTokenStorege }
 
 function TMsTokenStorege.BuildFilename(): string;
 begin
@@ -348,7 +355,7 @@ Result := Default(TMsClientInfo);
   Result.RedirectUri := RedirectUri;
 end;
 
-{ TMsClientEvents }
+{ TMsAdClientEvents }
 
 class function TMsClientEvents.Create(OnPageOpen: TOnPageOpen;
   OnRequestError: TOnRequestError;
@@ -359,7 +366,7 @@ begin
   Result.WhileWaitingOnToken := WhileWaitingOnToken;
 end;
 
-{ TMsDelegatedAuthenticator }
+{ TMsAdDelegatedAuthenticator }
 
 constructor TMsDelegatedAuthenticator.Create(ClientInfo: TMsClientInfo;
   ClientEvents: TMsClientEvents);
@@ -425,19 +432,19 @@ begin
   //Check Response and Extract Data
   if AResponse.StatusCode <> 200 then
   begin
-    AError.error_data := AResponse.ContentAsString(TEncoding.UTF8);
-    AError.StatusCode := AResponse.StatusCode;
-    AError.StatusText := AResponse.StatusText;
+    AError.HTTPerror_data := AResponse.ContentAsString(TEncoding.UTF8);
+    AError.HTTPStatusCode := AResponse.StatusCode;
+    AError.HTTPStatusText := AResponse.StatusText;
     Result := False;
 
     // containing an error message (maybe)
-    if AResponseJson.TryGetValue<string>('error', AError.error_name) then
+    if AResponseJson.TryGetValue<string>('error', AError.HTTPerror_name) then
     begin
-      AError.error_data := AResponse.ContentAsString(TEncoding.UTF8);
+      AError.HTTPerror_data := AResponse.ContentAsString(TEncoding.UTF8);
 
-      AResponseJson.TryGetValue<string>('error_description', AError.error_description);
+      AResponseJson.TryGetValue<string>('error_description', AError.HTTPerror_description);
       // check if the error is an "refresh Token Expired Message"
-      if (AError.error_description = 'invalid_grant') and ContainsText(AError.error_description, 'AADSTS700082') then
+      if (AError.HTTPerror_description = 'invalid_grant') and ContainsText(AError.HTTPerror_description, 'AADSTS700082') then
       begin
         // Refresh token expired so do user auth
         Result := self.FDoUserAuth;
@@ -545,17 +552,17 @@ begin
     // Check Response And Extract Data
     if AResponse.StatusCode <> 200 then
     begin
-      AError.error_data := AResponse.ContentAsString(TEncoding.UTF8);
-      AError.StatusCode := AResponse.StatusCode;
-      AError.StatusText := AResponse.StatusText;
+      AError.HTTPerror_data := AResponse.ContentAsString(TEncoding.UTF8);
+      AError.HTTPStatusCode := AResponse.StatusCode;
+      AError.HTTPStatusText := AResponse.StatusText;
       Result := False;
 
       // containing an error message (maybe)
-      if AResponseJson.TryGetValue<string>('error', AError.error_name) then
+      if AResponseJson.TryGetValue<string>('error', AError.HTTPerror_name) then
       begin
-        AError.error_data := AResponse.ContentAsString(TEncoding.UTF8);
+        AError.HTTPerror_data := AResponse.ContentAsString(TEncoding.UTF8);
 
-        AResponseJson.TryGetValue<string>('error_description', AError.error_description);
+        AResponseJson.TryGetValue<string>('error_description', AError.HTTPerror_description);
       end;
 
       if not Result then
@@ -779,7 +786,7 @@ procedure TMsDelegatedAuthenticator.FOnIdListenException(
 begin
 end;
 
-{ TMsDeamonAuthenticator }
+{ TMsAdDeamonAuthenticator }
 
 constructor TMsDeamonAuthenticator.Create(ClientInfo: TMsClientInfo;
   ClientEvents: TMsClientEvents);
@@ -902,19 +909,19 @@ begin
   //Check Response and Extract Data
   if AResponse.StatusCode <> 200 then
   begin
-    AError.error_data := AResponse.ContentAsString(TEncoding.UTF8);
-    AError.StatusCode := AResponse.StatusCode;
-    AError.StatusText := AResponse.StatusText;
+    AError.HTTPerror_data := AResponse.ContentAsString(TEncoding.UTF8);
+    AError.HTTPStatusCode := AResponse.StatusCode;
+    AError.HTTPStatusText := AResponse.StatusText;
     Result := False;
 
     // containing an error message (maybe)
-    if AResponseJson.TryGetValue<string>('error', AError.error_name) then
+    if AResponseJson.TryGetValue<string>('error', AError.HTTPerror_name) then
     begin
 
-      AResponseJson.TryGetValue<string>('error_description', AError.error_description);
+      AResponseJson.TryGetValue<string>('error_description', AError.HTTPerror_description);
 
       // check if the error is an "refresh Token Expired Message"
-      if (AError.error_name = 'invalid_grant') and ContainsText(AError.error_description, 'AADSTS700082') then
+      if (AError.HTTPerror_name = 'invalid_grant') and ContainsText(AError.HTTPerror_description, 'AADSTS700082') then
       begin
         // Refresh token expired so do user auth
         Result := self.FDoAdminAuth;
@@ -1065,26 +1072,31 @@ begin
 
 end;
 
-{ TMsAdapter }
+{ TMsAdAdapter }
 
 constructor TMsAdapter.Create(Authenticator: TMsAuthenticator);
 begin
-  self.AAuthenticator := Authenticator;
+  self.FAuthenticator := Authenticator;
 end;
 
 function TMsAdapter.FForeRefresh: string;
 begin
-  Result := self.AAuthenticator.FForceRefresh;
+  Result := self.FAuthenticator.FForceRefresh;
 end;
 
 function TMsAdapter.FGetAuthenticatorType: TAthenticatorType;
 begin
-  Result := self.AAuthenticator.FAuthenticatorType;
+  Result := self.FAuthenticator.FAuthenticatorType;
+end;
+
+function TMsAdapter.FGetHttpClient: THttpClient;
+begin
+  Result := self.FAuthenticator.FHttpClient;
 end;
 
 function TMsAdapter.FGetRequestErrorEvent: TOnRequestError;
 begin
-  Result := self.AAuthenticator.FGetRequestErrorEvent();
+  Result := self.FAuthenticator.FGetRequestErrorEvent();
 end;
 
 function TMsAdapter.FGetToken: string;
@@ -1092,12 +1104,12 @@ var
   AToken: string;
 begin
   Result := '';
-  AToken := self.AAuthenticator.FGetToken;
+  AToken := self.FAuthenticator.FGetToken;
   if AToken <> '' then
     Result := 'Bearer ' + AToken;
 end;
 
-{ TMsAuthenticator }
+{ TMsAdAuthenticator }
 
 class function TMsAuthenticator.Create(AuthenticatorType: TAthenticatorType;
   ClientInfo: TMsClientInfo;
@@ -1110,7 +1122,7 @@ begin
   end;
 end;
 
-{ TMsClientInfo.TScope }
+{ TMsAdClientInfo.TScope }
 
 function TMsClientInfo.TScope.makeScopeString: string;
 var
@@ -1124,6 +1136,23 @@ begin
   if IndexText('offline_access', AEncoded) = -1 then AEncoded := AEncoded + ['offline_access'];
   // join them with ' '
   Result := String.Join(' ', AEncoded);
+end;
+
+{ TMsError }
+
+class operator TMsError.Initialize(out Dest: TMsError);
+begin
+  Dest.HTTPStatusCode := 0;
+  Dest.HTTPStatusText := '';
+  Dest.HTTPurl := '';
+  Dest.HTTPMethod := '';
+  Dest.HTTPreq_Header := [];
+  Dest.HTTPres_header := [];
+  Dest.HTTPerror_data := '';
+  Dest.HTTPerror_name := '';
+  Dest.HTTPerror_description := '';
+  Dest.INTERNALerror_name := '';
+  Dest.INTERNALerror_message := '';
 end;
 
 // seeding so random ist really random

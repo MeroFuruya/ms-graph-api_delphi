@@ -7,7 +7,8 @@
 uses
   System.SysUtils,
   System.Classes,
-  MsAuthenticator in 'MsAuthenticator.pas',
+  MicrosoftApiAuthenticator,
+  key_press_helper,
   MsGraphGetUser in 'MsGraphGetUser.pas';
 
 var
@@ -58,43 +59,43 @@ begin
   begin
     redirectPort_word := redirectPort_int;
     auth := TMsAuthenticator.Create(
-      TMsAuthenticator.TAthenticatorType.ATDelegated,
+      ATDelegated,
       TMsClientInfo.Create(
         tenantId,
         clientId,
         ['User.Read.All'],
-        TRedirectUri.Create(redirectPort_word, redirectPath),
-        TMsTokenStorege.Create('LMPS')
+        TRedirectUri.Create(redirectPort_word, redirectPath), // YOUR REDIRECT URI (it must be localhost though)
+        TMsTokenStorege.CreateEmpty
       ),
       TMsClientEvents.Create(
-        procedure(ResponseInfo: THttpServerResponse)
-        begin
-          ResponseInfo.ContentStream := TStringStream.Create('<title>Login Succes</title>This Tab can be closed now :)');
-        end,
-        procedure(Error: TMserror)
-        begin
-          writeln(
-            Format(
-              ''
-              + '%sStatus: . . . . . %d : %s'
-              + '%sErrorName: . . .  %s'
-              + '%sErrorDescription: %s'
-              + '%sUrl: . . . . . .  %s %s'
-              + '%sData: . . . . . . %s',
-              [
-                sLineBreak, error.StatusCode, error.StatusText,
-                sLineBreak, error.error_name,
-                sLineBreak, error.error_description,
-                sLineBreak, error.Method, error.url,
-                sLineBreak, error.error_data
-              ]
-            )
-          );
-        end,
-        procedure(out Cancel: boolean)
-        begin
-
-        end
+      procedure(ResponseInfo: THttpServerResponse)
+      begin
+        ResponseInfo.ContentStream := TStringStream.Create('<title>Login Succes</title>This tab can be closed now :)');  // YOUR SUCCESS PAGE, do whatever you want here
+      end,
+      procedure(Error: TMsError)
+      begin
+        Writeln(Format(  // A premade error message, do whatever you want here
+          ''
+          + '%sStatus: . . . . . %d : %s'
+          + '%sErrorName:  . . . %s'
+          + '%sErrorDescription: %s'
+          + '%sUrl:  . . . . . . %s %s'
+          + '%sData: . . . . . . %s',
+          [
+            sLineBreak, error.HTTPStatusCode, error.HTTPStatusText,
+            sLineBreak, error.HTTPerror_name,
+            sLineBreak, error.HTTPerror_description,
+            sLineBreak, error.HTTPMethod, error.HTTPurl,
+            sLineBreak, error.HTTPerror_data
+          ]
+        ));
+      end,
+      procedure(out Cancel: boolean)
+      begin
+        Cancel := KeyPressed(0);  // Cancel the authentication if a key is pressed
+        sleep(0); // if you refresh app-messages here you dont need the sleep
+        // Application.ProcessMessages;
+      end
       )
     );
 
