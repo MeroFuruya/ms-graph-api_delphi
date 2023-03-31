@@ -1,4 +1,4 @@
-﻿unit MsAdGraphGetUser;
+﻿unit MsGraphGetUser;
 
 interface
 
@@ -10,18 +10,17 @@ uses
   System.SysUtils,
   System.StrUtils,
   System.Generics.Collections,
-  MsAdAuthenticator;
+  MsAuthenticator;
 
 
 type
-  TMsAdGraph = class(TMsAdAdapter)
+  TMsGraph = class(TMsAdapter)
   private
     FHTTP: THTTPClient;
     FTenant: string;
-
     function GetValue(AJ: TJsonValue; AKey: string; var AValue: string): boolean;
   public
-    constructor Create(authenticator: TMsAdAuthenticator; tenantId: string);
+    constructor Create(authenticator: TMsAuthenticator; tenantId: string);
     destructor Destroy; override;
     function GetUser(sysLogin: string): string;
     function GetUsers: string;
@@ -29,9 +28,9 @@ type
 
 implementation
 
-{ TMsAdGraph }
+{ TMsGraph }
 
-constructor TMsAdGraph.Create(authenticator: TMsAdAuthenticator;
+constructor TMsGraph.Create(authenticator: TMsAuthenticator;
   tenantId: string);
 begin
   inherited Create(authenticator);
@@ -39,13 +38,13 @@ begin
   self.FTenant := tenantId;
 end;
 
-destructor TMsAdGraph.Destroy;
+destructor TMsGraph.Destroy;
 begin
   self.FHTTP.Free;
   inherited Destroy;
 end;
 
-function TMsAdGraph.GetUser(sysLogin: string): string;
+function TMsGraph.GetUser(sysLogin: string): string;
 var
   ASelectFields: TArray<string>;
   AQuery: string;
@@ -56,7 +55,7 @@ var
   AJArr: TJSONArray;
   AJUser: TJSONValue;
   AJErr: TJsonValue;
-  AErr: TMsAdError;
+  AErr: TMsError;
   AToken: string;
 
   displayName, givenName, surname, mail, bussinesPhone, mobilePhone, faxNumber: string;
@@ -97,7 +96,7 @@ begin
 
     if ARes.StatusCode <> 200 then
     begin
-      AErr := Default(TMsAdError);
+      AErr := Default(TMsError);
       AErr.StatusCode := ARes.StatusCode;
       AErr.StatusText := ARes.StatusText;
       AErr.url := AUrl;
@@ -166,7 +165,7 @@ begin
   end;
 end;
 
-function TMsAdGraph.GetUsers: string;
+function TMsGraph.GetUsers: string;
 var
   ASelectFields: TArray<string>;
   AQuery: string;
@@ -177,7 +176,7 @@ var
   AJArr: TJSONArray;
   AJUser: TJSONValue;
   AJErr: TJsonValue;
-  AErr: TMsAdError;
+  AErr: TMsError;
   AToken: string;
 
   AJsonArrayList: TList<TJSONArray>;
@@ -232,7 +231,7 @@ begin
 
       if AResCode <> 200 then
       begin
-        AErr := Default(TMsAdError);
+        AErr := Default(TMsError);
         AErr.StatusCode := ARes.StatusCode;
         AErr.StatusText := ARes.StatusText;
         AErr.url := AUrl;
@@ -318,7 +317,7 @@ begin
   end;
 end;
 
-function TMsAdGraph.GetValue(AJ: TJsonValue; AKey: string; var AValue: string): boolean;
+function TMsGraph.GetValue(AJ: TJsonValue; AKey: string; var AValue: string): boolean;
 var
   AI: Integer;
 begin

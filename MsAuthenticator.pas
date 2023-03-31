@@ -1,4 +1,4 @@
-﻿unit MsAdAuthenticator;
+﻿unit MsAuthenticator;
 
 interface
 
@@ -22,7 +22,7 @@ uses
   IdHTTPServer, IdContext, IdCustomHTTPServer, IdSocketHandle, IdURI, IdCustomTCPServer;
 
 type
-  TMsAdError = record
+  TMsError = record
     StatusCode: integer;
     StatusText: string;
     url: string;
@@ -48,7 +48,7 @@ type
     class function Create(Port: word; URL: string): TRedirectUri; static;
   end;
 
-  TMsAdTokenStorege = record
+  TMsTokenStorege = record
   private const
     FileName = 'MicrosoftAzureAuthentication.bin';
   private type
@@ -65,11 +65,11 @@ type
     procedure store();
     function load(): boolean;
   public
-    class function Create(AppName: string): TMsAdTokenStorege; static;
-    class function CreateEmpty: TMsAdTokenStorege; static;
+    class function Create(AppName: string): TMsTokenStorege; static;
+    class function CreateEmpty: TMsTokenStorege; static;
   end;
 
-  TMsAdClientInfo = record
+  TMsClientInfo = record
   private type
     TScope = record
       scopes: TArray<string>;
@@ -81,48 +81,48 @@ type
     ClientSecret: string;
     Scope: TScope;
     RedirectUri: TRedirectUri;
-    TokenStorage: TMsAdTokenStorege;
+    TokenStorage: TMsTokenStorege;
     function CheckToken: boolean;
   public
-    class function Create(Tenant, ClientId: string; Scope: TArray<string>; RedirectUri: TRedirectUri; TokenStorage: TMsAdTokenStorege): TMsAdClientInfo; overload; static;
-    class function Create(Tenant, ClientId, ClientSecret: string; Scope: TArray<string>; RedirectUri: TRedirectUri): TMsAdClientInfo; overload; static;
+    class function Create(Tenant, ClientId: string; Scope: TArray<string>; RedirectUri: TRedirectUri; TokenStorage: TMsTokenStorege): TMsClientInfo; overload; static;
+    class function Create(Tenant, ClientId, ClientSecret: string; Scope: TArray<string>; RedirectUri: TRedirectUri): TMsClientInfo; overload; static;
   end;
 
-  TMsAdClientEvents = record
+  TMsClientEvents = record
   public type
     // EVENTS
     TOnPageOpen = reference to procedure(ResponseInfo: THttpServerResponse);
-    TOnRequestError = reference to procedure(Error: TMsAdError);
+    TOnRequestError = reference to procedure(Error: TMsError);
     TWhileWaitingOnToken = reference to procedure(out Cancel: boolean);
   public
     OnPageOpen: TOnPageOpen;
     OnRequestError: TOnRequestError;
     WhileWaitingOnToken: TWhileWaitingOnToken;
-    class function Create(OnPageOpen: TOnPageOpen; OnRequestError: TOnRequestError; WhileWaitingOnToken: TWhileWaitingOnToken): TMsAdClientEvents; static;
+    class function Create(OnPageOpen: TOnPageOpen; OnRequestError: TOnRequestError; WhileWaitingOnToken: TWhileWaitingOnToken): TMsClientEvents; static;
   end;
 
-  TMsAdAuthenticator = class
+  TMsAuthenticator = class
   private type
-    TOnRequestError = TMsAdClientEvents.TOnRequestError;
+    TOnRequestError = TMsClientEvents.TOnRequestError;
   public type
     TAthenticatorType = (ATDelegated, ATDeamon);
   private
     FAuthenticatorType: TAthenticatorType;
     // main Vars
-    FClientInfo: TMsAdClientInfo;
-    FEvents: TMsAdClientEvents;
+    FClientInfo: TMsClientInfo;
+    FEvents: TMsClientEvents;
     function FGetToken: string; virtual; abstract;
     function FForceRefresh: string; virtual; abstract;
     function FGetRequestErrorEvent: TOnRequestError; virtual; abstract;
   public
-    class function Create(AuthenticatorType: TAthenticatorType; ClientInfo: TMsAdClientInfo; ClientEvents: TMsAdClientEvents): TMsAdAuthenticator; overload;
+    class function Create(AuthenticatorType: TAthenticatorType; ClientInfo: TMsClientInfo; ClientEvents: TMsClientEvents): TMsAuthenticator; overload;
   end;
 
-  TMsAdDelegatedAuthenticator = class(TMsAdAuthenticator)
+  TMsDelegatedAuthenticator = class(TMsAuthenticator)
   private
     // HTTP Vars
     FHttpClient: THTTPClient;
-    FScope: TMsAdClientInfo.TScope;
+    FScope: TMsClientInfo.TScope;
 
     // Token Vars
     FAccesCode: string;
@@ -154,18 +154,18 @@ type
     function FGetToken: string; override;
     function FForceRefresh: string; override;
 
-    function FGetRequestErrorEvent: TMsAdAuthenticator.TOnRequestError; override;
+    function FGetRequestErrorEvent: TMsAuthenticator.TOnRequestError; override;
   public
-    constructor Create(ClientInfo: TMsAdClientInfo; ClientEvents: TMsAdClientEvents);
+    constructor Create(ClientInfo: TMsClientInfo; ClientEvents: TMsClientEvents);
     destructor Destroy; override;
   end;
 
-  TMsAdDeamonAuthenticator = class(TMsAdAuthenticator)
+  TMsDeamonAuthenticator = class(TMsAuthenticator)
   private
 
     // HTTP Vars
     FHttpClient: THTTPClient;
-    FScope: TMsAdClientInfo.TScope;
+    FScope: TMsClientInfo.TScope;
 
     // Token Vars
     FAdminConsentGiven: boolean;
@@ -195,20 +195,20 @@ type
     function FGetToken: string; override;
     function FForceRefresh: string; override;
 
-    function FGetRequestErrorEvent: TMsAdAuthenticator.TOnRequestError; override;
+    function FGetRequestErrorEvent: TMsAuthenticator.TOnRequestError; override;
   public
-    constructor Create(ClientInfo: TMsAdClientInfo; ClientEvents: TMsAdClientEvents);
+    constructor Create(ClientInfo: TMsClientInfo; ClientEvents: TMsClientEvents);
     destructor Destroy; override;
   end;
 
 
-  TMsAdAdapter = class abstract
+  TMsAdapter = class abstract
   public type
-    TAthenticatorType = TMsAdAuthenticator.TAthenticatorType;
+    TAthenticatorType = TMsAuthenticator.TAthenticatorType;
   private type
-    TOnRequestError = TMsAdAuthenticator.TOnRequestError;
+    TOnRequestError = TMsAuthenticator.TOnRequestError;
   private
-    AAuthenticator: TMsAdAuthenticator;
+    AAuthenticator: TMsAuthenticator;
     function FGetToken: string;
     function FForeRefresh: string;
     function FGetAuthenticatorType: TAthenticatorType;
@@ -219,31 +219,31 @@ type
     property AuthenticatorType: TAthenticatorType read FGetAuthenticatorType;
     property OnRequestError: TOnRequestError read FGetRequestErrorEvent;
   public
-    constructor Create(Authenticator: TMsAdAuthenticator);
+    constructor Create(Authenticator: TMsAuthenticator);
   end;
 
 implementation
 
-{ TMsAdTokenStorege }
+{ TMsTokenStorege }
 
-function TMsAdTokenStorege.BuildFilename(): string;
+function TMsTokenStorege.BuildFilename(): string;
 begin
   if self.AppName = '' then self.AppName := extractfilename(paramstr(0));
-  Result := IncludeTrailingPathDelimiter(IncludeTrailingPathDelimiter(TPath.GetHomePath)+self.AppName)+TMsAdTokenStorege.FileName;
+  Result := IncludeTrailingPathDelimiter(IncludeTrailingPathDelimiter(TPath.GetHomePath)+self.AppName)+TMsTokenStorege.FileName;
 end;
 
-class function TMsAdTokenStorege.Create(AppName: string): TMsAdTokenStorege;
+class function TMsTokenStorege.Create(AppName: string): TMsTokenStorege;
 begin
-  Result := Default(TMsAdTokenStorege);
+  Result := Default(TMsTokenStorege);
   Result.AppName := AppName;
 end;
 
-class function TMsAdTokenStorege.CreateEmpty: TMsAdTokenStorege;
+class function TMsTokenStorege.CreateEmpty: TMsTokenStorege;
 begin
-  Result := Default(TMsAdTokenStorege);
+  Result := Default(TMsTokenStorege);
 end;
 
-function TMsAdTokenStorege.load(): boolean;
+function TMsTokenStorege.load(): boolean;
 var
   AF: TStringStream;
   Aj: TJsonValue;
@@ -272,7 +272,7 @@ begin
   end;
 end;
 
-procedure TMsAdTokenStorege.store();
+procedure TMsTokenStorege.store();
 var
   AF: TStringStream;
   Aj: TJSONObject;
@@ -316,10 +316,10 @@ begin
   Result := TNetEncoding.URL.Encode(self.Transport + self.Domain + ':' + IntToStr(self.Port) + self.URL);
 end;
 
-class function TMsAdClientInfo.Create(Tenant, ClientId: string;
-  Scope: TArray<string>; RedirectUri: TRedirectUri; TokenStorage: TMsAdTokenStorege): TMsAdClientInfo;
+class function TMsClientInfo.Create(Tenant, ClientId: string;
+  Scope: TArray<string>; RedirectUri: TRedirectUri; TokenStorage: TMsTokenStorege): TMsClientInfo;
 begin
-  Result := Default(TMsAdClientInfo);
+  Result := Default(TMsClientInfo);
   Result.Tenant := Tenant;
   Result.ClientId := ClientId;
   Result.Scope.scopes := Scope;
@@ -327,7 +327,7 @@ begin
   Result.TokenStorage := TokenStorage;
 end;
 
-function TMsAdClientInfo.CheckToken: boolean;
+function TMsClientInfo.CheckToken: boolean;
 begin
   result := (
     (self.TokenStorage.Token.token <> '') and
@@ -337,10 +337,10 @@ begin
   );
 end;
 
-class function TMsAdClientInfo.Create(Tenant, ClientId, ClientSecret: string;
-  Scope: TArray<string>; RedirectUri: TRedirectUri): TMsAdClientInfo;
+class function TMsClientInfo.Create(Tenant, ClientId, ClientSecret: string;
+  Scope: TArray<string>; RedirectUri: TRedirectUri): TMsClientInfo;
 begin
-Result := Default(TMsAdClientInfo);
+Result := Default(TMsClientInfo);
   Result.Tenant := Tenant;
   Result.ClientId := ClientId;
   Result.ClientSecret := ClientSecret;
@@ -348,21 +348,21 @@ Result := Default(TMsAdClientInfo);
   Result.RedirectUri := RedirectUri;
 end;
 
-{ TMsAdClientEvents }
+{ TMsClientEvents }
 
-class function TMsAdClientEvents.Create(OnPageOpen: TOnPageOpen;
+class function TMsClientEvents.Create(OnPageOpen: TOnPageOpen;
   OnRequestError: TOnRequestError;
-  WhileWaitingOnToken: TWhileWaitingOnToken): TMsAdClientEvents;
+  WhileWaitingOnToken: TWhileWaitingOnToken): TMsClientEvents;
 begin
   Result.OnPageOpen := OnPageOpen;
   result.OnRequestError := OnRequestError;
   Result.WhileWaitingOnToken := WhileWaitingOnToken;
 end;
 
-{ TMsAdDelegatedAuthenticator }
+{ TMsDelegatedAuthenticator }
 
-constructor TMsAdDelegatedAuthenticator.Create(ClientInfo: TMsAdClientInfo;
-  ClientEvents: TMsAdClientEvents);
+constructor TMsDelegatedAuthenticator.Create(ClientInfo: TMsClientInfo;
+  ClientEvents: TMsClientEvents);
 begin
   inherited Create;
   self.FAuthenticatorType := TAthenticatorType.ATDelegated;
@@ -378,7 +378,7 @@ begin
   self.FScope := ClientInfo.Scope;
 end;
 
-destructor TMsAdDelegatedAuthenticator.Destroy;
+destructor TMsDelegatedAuthenticator.Destroy;
 begin
   if self.FClientInfo.CheckToken then
   begin
@@ -388,7 +388,7 @@ begin
   inherited;
 end;
 
-function TMsAdDelegatedAuthenticator.FDoRefreshToken: boolean;
+function TMsDelegatedAuthenticator.FDoRefreshToken: boolean;
 var
   AUrl: string;
   ARequest: IHTTPRequest;
@@ -398,7 +398,7 @@ var
   AResponseJson: TJSONValue;
   AExpiresIn: int64;
 
-  AError: TMsAdError;
+  AError: TMsError;
 begin
   // build Url
   AUrl := ''
@@ -465,7 +465,7 @@ begin
   AResponseJson.Free;
 end;
 
-function TMsAdDelegatedAuthenticator.FDoUserAuth: boolean;
+function TMsDelegatedAuthenticator.FDoUserAuth: boolean;
 var
   AHttpServer: TIdHTTPServer;
   ACancel: boolean;
@@ -478,7 +478,7 @@ var
 
   AExpiresIn: int64;
 
-  AError: TMsAdError;
+  AError: TMsError;
 begin
   self.FAccesCodeSet := false;
   self.FAccesCodeErrorOccured := false;
@@ -588,7 +588,7 @@ begin
   end;
 end;
 
-function TMsAdDelegatedAuthenticator.FForceRefresh: string;
+function TMsDelegatedAuthenticator.FForceRefresh: string;
 begin
   if self.FClientInfo.TokenStorage.Token.token = '' then
     self.FClientInfo.TokenStorage.load;
@@ -598,7 +598,7 @@ begin
     Result := '';
 end;
 
-function TMsAdDelegatedAuthenticator.FCreateState: string;
+function TMsDelegatedAuthenticator.FCreateState: string;
 const
   StateDefaultLength = 200;
 var
@@ -613,12 +613,12 @@ begin
   Result := TNetEncoding.Base64URL.Encode(AData);
 end;
 
-function TMsAdDelegatedAuthenticator.FGetRequestErrorEvent: TMsAdAuthenticator.TOnRequestError;
+function TMsDelegatedAuthenticator.FGetRequestErrorEvent: TMsAuthenticator.TOnRequestError;
 begin
   Result := self.FEvents.OnRequestError;
 end;
 
-function TMsAdDelegatedAuthenticator.FGetToken: string;
+function TMsDelegatedAuthenticator.FGetToken: string;
 var
   ok: boolean;
 begin
@@ -680,7 +680,7 @@ begin
   end;
 end;
 
-procedure TMsAdDelegatedAuthenticator.FOnCommandGet(AContext: TIdContext;
+procedure TMsDelegatedAuthenticator.FOnCommandGet(AContext: TIdContext;
   ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
 const
   Code = 'code';
@@ -763,26 +763,26 @@ begin
   end;
 end;
 
-procedure TMsAdDelegatedAuthenticator.FOnIdCommandError(AContext: TIdContext;
+procedure TMsDelegatedAuthenticator.FOnIdCommandError(AContext: TIdContext;
   ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo;
   AException: Exception);
 begin
 end;
 
-procedure TMsAdDelegatedAuthenticator.FOnIdException(AContext: TIdContext;
+procedure TMsDelegatedAuthenticator.FOnIdException(AContext: TIdContext;
   AException: Exception);
 begin
 end;
 
-procedure TMsAdDelegatedAuthenticator.FOnIdListenException(
+procedure TMsDelegatedAuthenticator.FOnIdListenException(
   AThread: TIdListenerThread; AException: Exception);
 begin
 end;
 
-{ TMsAdDeamonAuthenticator }
+{ TMsDeamonAuthenticator }
 
-constructor TMsAdDeamonAuthenticator.Create(ClientInfo: TMsAdClientInfo;
-  ClientEvents: TMsAdClientEvents);
+constructor TMsDeamonAuthenticator.Create(ClientInfo: TMsClientInfo;
+  ClientEvents: TMsClientEvents);
 begin
   inherited Create;
   self.FAuthenticatorType := TAthenticatorType.ATDeamon;
@@ -799,13 +799,13 @@ begin
   self.FScope := ClientInfo.Scope;
 end;
 
-destructor TMsAdDeamonAuthenticator.Destroy;
+destructor TMsDeamonAuthenticator.Destroy;
 begin
   self.FHttpClient.Free;
   inherited;
 end;
 
-function TMsAdDeamonAuthenticator.FCreateState: string;
+function TMsDeamonAuthenticator.FCreateState: string;
 const
   StateDefaultLength = 200;
 var
@@ -820,7 +820,7 @@ begin
   Result := TNetEncoding.Base64URL.Encode(AData);
 end;
 
-function TMsAdDeamonAuthenticator.FDoAdminAuth: boolean;
+function TMsDeamonAuthenticator.FDoAdminAuth: boolean;
 var
   AHttpServer: TIdHTTPServer;
   ACancel: boolean;
@@ -867,7 +867,7 @@ begin
   end
 end;
 
-function TMsAdDeamonAuthenticator.FDoGetNewToken: boolean;
+function TMsDeamonAuthenticator.FDoGetNewToken: boolean;
 var
   AUrl: string;
   ARequest: IHTTPRequest;
@@ -876,7 +876,7 @@ var
 
   AResponseJson: TJSONValue;
   AExpiresIn: int64;
-  AError: TMsAdError;
+  AError: TMsError;
 begin
   // build Url
   AUrl := ''
@@ -940,7 +940,7 @@ begin
   AResponseJson.Free;
 end;
 
-function TMsAdDeamonAuthenticator.FForceRefresh: string;
+function TMsDeamonAuthenticator.FForceRefresh: string;
 begin
   if self.FDoGetNewToken then
     Result := self.FAccesToken
@@ -948,12 +948,12 @@ begin
     Result := '';
 end;
 
-function TMsAdDeamonAuthenticator.FGetRequestErrorEvent: TMsAdAuthenticator.TOnRequestError;
+function TMsDeamonAuthenticator.FGetRequestErrorEvent: TMsAuthenticator.TOnRequestError;
 begin
   Result := self.FEvents.OnRequestError;
 end;
 
-function TMsAdDeamonAuthenticator.FGetToken: string;
+function TMsDeamonAuthenticator.FGetToken: string;
 var
   ok: boolean;
 begin
@@ -979,7 +979,7 @@ begin
     Result := '';
 end;
 
-procedure TMsAdDeamonAuthenticator.FOnCommandGet(AContext: TIdContext;
+procedure TMsDeamonAuthenticator.FOnCommandGet(AContext: TIdContext;
   ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
 const
   Code = 'code';
@@ -1046,48 +1046,48 @@ begin
   end;
 end;
 
-procedure TMsAdDeamonAuthenticator.FOnIdCommandError(AContext: TIdContext;
+procedure TMsDeamonAuthenticator.FOnIdCommandError(AContext: TIdContext;
   ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo;
   AException: Exception);
 begin
 
 end;
 
-procedure TMsAdDeamonAuthenticator.FOnIdException(AContext: TIdContext;
+procedure TMsDeamonAuthenticator.FOnIdException(AContext: TIdContext;
   AException: Exception);
 begin
 
 end;
 
-procedure TMsAdDeamonAuthenticator.FOnIdListenException(
+procedure TMsDeamonAuthenticator.FOnIdListenException(
   AThread: TIdListenerThread; AException: Exception);
 begin
 
 end;
 
-{ TMsAdAdapter }
+{ TMsAdapter }
 
-constructor TMsAdAdapter.Create(Authenticator: TMsAdAuthenticator);
+constructor TMsAdapter.Create(Authenticator: TMsAuthenticator);
 begin
   self.AAuthenticator := Authenticator;
 end;
 
-function TMsAdAdapter.FForeRefresh: string;
+function TMsAdapter.FForeRefresh: string;
 begin
   Result := self.AAuthenticator.FForceRefresh;
 end;
 
-function TMsAdAdapter.FGetAuthenticatorType: TAthenticatorType;
+function TMsAdapter.FGetAuthenticatorType: TAthenticatorType;
 begin
   Result := self.AAuthenticator.FAuthenticatorType;
 end;
 
-function TMsAdAdapter.FGetRequestErrorEvent: TOnRequestError;
+function TMsAdapter.FGetRequestErrorEvent: TOnRequestError;
 begin
   Result := self.AAuthenticator.FGetRequestErrorEvent();
 end;
 
-function TMsAdAdapter.FGetToken: string;
+function TMsAdapter.FGetToken: string;
 var
   AToken: string;
 begin
@@ -1097,22 +1097,22 @@ begin
     Result := 'Bearer ' + AToken;
 end;
 
-{ TMsAdAuthenticator }
+{ TMsAuthenticator }
 
-class function TMsAdAuthenticator.Create(AuthenticatorType: TAthenticatorType;
-  ClientInfo: TMsAdClientInfo;
-  ClientEvents: TMsAdClientEvents): TMsAdAuthenticator;
+class function TMsAuthenticator.Create(AuthenticatorType: TAthenticatorType;
+  ClientInfo: TMsClientInfo;
+  ClientEvents: TMsClientEvents): TMsAuthenticator;
 begin
   Result := nil;
   case AuthenticatorType of
-    ATDelegated: Result := TMsAdDelegatedAuthenticator.Create(ClientInfo, ClientEvents);
-    ATDeamon: Result := TMsAdDeamonAuthenticator.Create(ClientInfo, ClientEvents);
+    ATDelegated: Result := TMsDelegatedAuthenticator.Create(ClientInfo, ClientEvents);
+    ATDeamon: Result := TMsDeamonAuthenticator.Create(ClientInfo, ClientEvents);
   end;
 end;
 
-{ TMsAdClientInfo.TScope }
+{ TMsClientInfo.TScope }
 
-function TMsAdClientInfo.TScope.makeScopeString: string;
+function TMsClientInfo.TScope.makeScopeString: string;
 var
   AI: integer;
   AEncoded: TArray<string>;
