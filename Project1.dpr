@@ -7,12 +7,12 @@
 uses
   System.SysUtils,
   System.Classes,
-  MsAdAuthenticator in 'MsAdAuthenticator.pas',
-  MsAdGraphGetUser in 'MsAdGraphGetUser.pas';
+  MsAuthenticator in 'MsAuthenticator.pas',
+  MsGraphGetUser in 'MsGraphGetUser.pas';
 
 var
-  auth: TMsAdAuthenticator;
-  graph: TMsAdGraph;
+  auth: TMsAuthenticator;
+  graph: TMsGraph;
   stop: boolean;
   inp: string;
 
@@ -23,7 +23,6 @@ var
   redirectPort_int: integer;
   redirectPort_word: word;
 begin
-
 
   tenantId := GetEnvironmentVariable('tenantId');
   clientId := GetEnvironmentVariable('clientId');
@@ -58,21 +57,21 @@ begin
   else
   begin
     redirectPort_word := redirectPort_int;
-    auth := TMsAdAuthenticator.Create(
-      TMsAdAuthenticator.TAthenticatorType.ATDelegated,
-      TMsAdClientInfo.Create(
+    auth := TMsAuthenticator.Create(
+      TMsAuthenticator.TAthenticatorType.ATDelegated,
+      TMsClientInfo.Create(
         tenantId,
         clientId,
         ['User.Read.All'],
         TRedirectUri.Create(redirectPort_word, redirectPath),
-        TMsAdTokenStorege.Create('LMPS')
+        TMsTokenStorege.Create('LMPS')
       ),
-      TMsAdClientEvents.Create(
+      TMsClientEvents.Create(
         procedure(ResponseInfo: THttpServerResponse)
         begin
           ResponseInfo.ContentStream := TStringStream.Create('<title>Login Succes</title>This Tab can be closed now :)');
         end,
-        procedure(Error: TMsAderror)
+        procedure(Error: TMserror)
         begin
           writeln(
             Format(
@@ -99,7 +98,7 @@ begin
       )
     );
 
-    graph := TMsAdGraph.Create(auth, tenantId);
+    graph := TMsGraph.Create(auth, tenantId);
 
     stop := false;
     while not stop do
@@ -110,16 +109,13 @@ begin
         stop := true
       else if inp.ToLower = 'all' then
       begin
-        Writeln('');
-        Writeln(graph.GetUsers);
+        Writeln(sLineBreak + graph.GetUsers + sLineBreak);
       end
       else
       begin
-        Writeln('');
-        Writeln(graph.GetUser(inp));
+        Writeln(sLineBreak + graph.GetUser(inp) + sLineBreak);
       end;
     end;
-
     Writeln('Goodbye..');
     graph.Free;
     auth.Free;
