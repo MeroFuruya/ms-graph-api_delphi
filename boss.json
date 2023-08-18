@@ -1,7 +1,7 @@
 {
 	"name": "msgraph-userinfo-cli",
-	"description": "",
-	"version": "3.0.0",
+	"description": "A small cli tool to get user information from the Microsoft Graph API",
+	"version": "2.4.0",
 	"homepage": "https://github.com/mac-brand-spaces/msgraph-userinfo-cli",
 	"mainsrc": "./src",
 	"projects": [
