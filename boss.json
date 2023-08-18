@@ -1,0 +1,13 @@
+{
+	"name": "msgraph-userinfo-cli",
+	"description": "",
+	"version": "3.0.0",
+	"homepage": "https://github.com/mac-brand-spaces/msgraph-userinfo-cli",
+	"mainsrc": "./src",
+	"projects": [
+		"Project1.dproj"
+	],
+	"dependencies": {
+		"github.com/mac-brand-spaces/microsoftapiauthentication": "^v1.3.3"
+	}
+}

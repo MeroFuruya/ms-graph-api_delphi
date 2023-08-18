@@ -1,0 +1,14 @@
+{
+	"hash": "d41d8cd98f00b204e9800998ecf8427e",
+	"updated": "2023-08-17T11:40:47.5317678+02:00",
+	"installedModules": {
+		"github.com/mac-brand-spaces/microsoftapiauthentication": {
+			"name": "microsoftapiauthentication",
+			"version": "v1.3.3",
+			"hash": "9bcaa831da9baeef58cf3b35eee59e48",
+			"artifacts": {},
+			"failed": false,
+			"changed": false
+		}
+	}
+}

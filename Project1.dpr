@@ -8,7 +8,7 @@ uses
   System.SysUtils,
   System.Classes,
   MicrosoftApiAuthenticator,
-  key_press_helper,
+  key_press_helper in 'key_press_helper.pas',
   MsGraphGetUser in 'MsGraphGetUser.pas';
 
 var
