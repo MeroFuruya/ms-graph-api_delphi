@@ -58,7 +58,12 @@ var
   AErr: TMsError;
   AToken: string;
 
-  displayName, givenName, surname, mail, bussinesPhone, mobilePhone, faxNumber: string;
+  id, accountEnabled,
+  userType, onPremisesSamAccountName,
+  userPrincipalName, displayName,
+  givenName, surname,
+  mail, bussinesPhone,
+  mobilePhone, faxNumber: string;
 begin
   AToken := self.Token;
 
@@ -67,6 +72,11 @@ begin
   if AToken <> '' then
   begin
     ASelectFields := [
+      'id',
+      'accountEnabled',
+      'userType',
+      'onPremisesSamAccountName',
+      'userPrincipalName',
       'businessPhones',
       'displayName',
       'faxNumber',
@@ -123,7 +133,12 @@ begin
         if AJArr.Count > 0 then
         begin
           AJUser := AJArr.Items[0];
-
+          
+          AJUser.TryGetValue<string>('id',id);
+          AJUser.TryGetValue<string>('accountEnabled',accountEnabled);
+          AJUser.TryGetValue<string>('userType',userType);
+          AJUser.TryGetValue<string>('onPremisesSamAccountName',onPremisesSamAccountName);
+          AJUser.TryGetValue<string>('userPrincipalName',userPrincipalName);
           AJUser.TryGetValue<string>('displayName', displayName);
           AJUser.TryGetValue<string>('businessPhones[0]', bussinesPhone);
           AJUser.TryGetValue<string>('givenName', givenName);
@@ -139,6 +154,10 @@ begin
           + '<METADATA>'
           + '<FIELDS>'
           + '<FIELD attrname="SYSTEMLOGIN" fieldtype="string" WIDTH="60"/>'
+          + '<FIELD attrname="ID" fieldtype="string" WIDTH="60"/>'
+          + '<FIELD attrname="accountEnabled" fieldtype="string" WIDTH="15"/>'
+          + '<FIELD attrname="userType" fieldtype="string" WIDTH="15"/>'
+          + '<FIELD attrname="USERPRINCIPALNAME" fieldtype="string" WIDTH="255"/>'
           + '<FIELD attrname="NAME" fieldtype="string" WIDTH="40"/>'
           + '<FIELD attrname="EMAIL" fieldtype="string" WIDTH="255"/>'
           + '<FIELD attrname="TELEFON" fieldtype="string" WIDTH="35"/>'
@@ -151,9 +170,14 @@ begin
           + '</METADATA>'
           + '<ROWDATA>'
           + Format(''
-              + '<ROW SYSTEMLOGIN="%s" NAME="%s" EMAIL="%s" TELEFON="%s" '
+              + '<ROW SYSTEMLOGIN="%s" ID="%s" '
+              + 'accountEnabled="%s" '
+              + 'userType="%s" '
+              + 'USERPRINCIPALNAME="%s" '
+              + 'NAME="%s" EMAIL="%s" TELEFON="%s" '
               + 'VORNAME="%s" NACHNAME="%s" FAX="%s" MOBILTELEFON="%s" />',
-              [sysLogin, displayName, mail, bussinesPhone, givenName, surname,
+              [ onPremisesSamAccountName, id, accountEnabled,userType,
+                userprincipalname, displayName, mail, bussinesPhone, givenName, surname,
                 faxNumber, mobilePhone]
             )
           + '</ROWDATA>'
@@ -183,7 +207,11 @@ var
 
   AResCode: Integer;
 
-  displayName, givenName, surname, mail, bussinesPhone, mobilePhone, faxNumber: string;
+  id, accountEnabled,
+  userType, userPrincipalName,
+  displayName, givenName,
+  surname, mail, bussinesPhone,
+  mobilePhone, faxNumber: string;
   sysLogin: string;
 begin
   AToken := self.Token;
@@ -193,6 +221,10 @@ begin
   if AToken <> '' then
   begin
     ASelectFields := [
+      'id',
+      'accountEnabled',
+      'userType',
+      'userPrincipalName',
       'businessPhones',
       'displayName',
       'faxNumber',
@@ -278,6 +310,10 @@ begin
       + '<FIELD attrname="NACHNAME" fieldtype="string" WIDTH="35"/>'
       + '<FIELD attrname="FAX" fieldtype="string" WIDTH="35"/>'
       + '<FIELD attrname="MOBILTELEFON" fieldtype="string" WIDTH="35"/>'
+      + '<FIELD attrname="ID" fieldtype="string" WIDTH="60"/>'
+      + '<FIELD attrname="accountEnabled" fieldtype="string" WIDTH="15"/>'
+      + '<FIELD attrname="userType" fieldtype="string" WIDTH="15"/>'
+      + '<FIELD attrname="USERPRINCIPALNAME" fieldtype="string" WIDTH="255"/>'
       + '</FIELDS>'
       + '<PARAMS/>'
       + '</METADATA>'
@@ -287,6 +323,11 @@ begin
       begin
         for AJUser in AJArr do
         begin
+          AJUser.TryGetValue<string>('id',id);
+          AJUser.TryGetValue<string>('accountEnabled', accountEnabled);
+          AJUser.TryGetValue<string>('userType', userType);
+          AJUser.TryGetValue<string>('onPremisesSamAccountName', sysLogin);
+          AJUser.TryGetValue<string>('userPrincipalName', userPrincipalName);
           AJUser.TryGetValue<string>('displayName', displayName);
           AJUser.TryGetValue<string>('businessPhones[0]', bussinesPhone);
           AJUser.TryGetValue<string>('givenName', givenName);
@@ -298,11 +339,16 @@ begin
 
           Result := Result
             + Format(''
-            + '<ROW SYSTEMLOGIN="%s" NAME="%s" EMAIL="%s" TELEFON="%s" '
-            + 'VORNAME="%s" NACHNAME="%s" FAX="%s" MOBILTELEFON="%s" />',
-            [sysLogin, displayName, mail, bussinesPhone, givenName, surname,
-              faxNumber, mobilePhone]
-          );
+              + '<ROW SYSTEMLOGIN="%s" ID="%s" '
+              + 'accountEnabled="%s" '
+              + 'userType="%s" '
+              + 'USERPRINCIPALNAME="%s" '
+              + 'NAME="%s" EMAIL="%s" TELEFON="%s" '
+              + 'VORNAME="%s" NACHNAME="%s" FAX="%s" MOBILTELEFON="%s" />',
+              [ sysLogin, id, accountEnabled,userType,
+                userprincipalname, displayName, mail, bussinesPhone, givenName, surname,
+                faxNumber, mobilePhone]
+            );
         end;
       end;
       
