@@ -66,9 +66,8 @@ begin
         tenantId,
         clientId,
         clientSecret,
-        ['User.Read.All'],
-        TRedirectUri.Create(redirectPort_word, redirectPath), // YOUR REDIRECT URI (it must be localhost though)
-        TMsTokenStorege.CreateEmpty
+        ['https://graph.microsoft.com/.default'],
+        TRedirectUri.Create(redirectPort_word, redirectPath) // YOUR REDIRECT URI (it must be localhost though)
       ),
       TMsClientEvents.Create(
       procedure(ResponseInfo: THttpServerResponse)
