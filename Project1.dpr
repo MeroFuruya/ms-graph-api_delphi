@@ -19,6 +19,7 @@ var
 
   tenantId: string;
   clientId: string;
+  clientSecret: string;
   redirectPort: string;
   redirectPath: string;
   redirectPort_int: integer;
@@ -27,6 +28,7 @@ begin
 
   tenantId := GetEnvironmentVariable('tenantId');
   clientId := GetEnvironmentVariable('clientId');
+  clientSecret := GetEnvironmentVariable('clientSecret');
   redirectPort := GetEnvironmentVariable('redirectPort');
   redirectPath := GetEnvironmentVariable('redirectPath');
 
@@ -59,10 +61,11 @@ begin
   begin
     redirectPort_word := redirectPort_int;
     auth := TMsAuthenticator.Create(
-      ATDelegated,
+      ATDeamon,
       TMsClientInfo.Create(
         tenantId,
         clientId,
+        clientSecret,
         ['User.Read.All'],
         TRedirectUri.Create(redirectPort_word, redirectPath), // YOUR REDIRECT URI (it must be localhost though)
         TMsTokenStorege.CreateEmpty
